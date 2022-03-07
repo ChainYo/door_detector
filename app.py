@@ -17,7 +17,7 @@ CLASSIFICATION_MODEL = Path("models/model_classification.h5")
 PYTORCH_MODEL = Path("models/pytorch_classif.pt")
 LABELMAP = ["Closed", "Open", "Semi"]
 
-detection_model = torch.hub.load("yolov5", "custom", path=DETECTION_MODEL, force_reload=True, source="local")
+detection_model = torch.hub.load("ultralytics/yolov5", "custom", path=DETECTION_MODEL, force_reload=True)
 classification_model = keras.models.load_model(CLASSIFICATION_MODEL)
 pytorch_model = DoorClassification()
 pytorch_model.load_state_dict(torch.load(DETECTION_MODEL))
