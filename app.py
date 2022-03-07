@@ -8,7 +8,7 @@ from tensorflow import keras
 from pathlib import Path
 from PIL import Image
 
-from .model import DoorClassification
+from model import DoorClassification
 
 
 IMG_FOLDER = Path("img")
