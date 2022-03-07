@@ -8,14 +8,20 @@ from tensorflow import keras
 from pathlib import Path
 from PIL import Image
 
+from .model import DoorClassification
+
 
 IMG_FOLDER = Path("img")
 DETECTION_MODEL = Path("models/model_detection.pt")
 CLASSIFICATION_MODEL = Path("models/model_classification.h5")
+PYTORCH_MODEL = Path("models/pytorch_classif.pt")
 LABELMAP = ["Closed", "Open", "Semi"]
 
 detection_model = torch.hub.load("yolov5", "custom", path=DETECTION_MODEL, force_reload=True, source="local")
 classification_model = keras.models.load_model(CLASSIFICATION_MODEL)
+pytorch_model = DoorClassification()
+pytorch_model.load_state_dict(torch.load(DETECTION_MODEL))
+pytorch_model.eval()
 
 
 def run_detection(img: Image):
