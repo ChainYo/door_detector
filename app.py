@@ -3,24 +3,19 @@ import numpy as np
 import torch
 import streamlit as st
 
-from tensorflow import keras
-
 from pathlib import Path
 from PIL import Image
 
 from model import DoorClassification
 
 
-IMG_FOLDER = Path("img")
 DETECTION_MODEL = Path("models/model_detection.pt")
-CLASSIFICATION_MODEL = Path("models/model_classification.h5")
-PYTORCH_MODEL = Path("models/pytorch_classif.pt")
+CLASSIFICATION_MODEL = Path("models/model_classification.pt")
 LABELMAP = ["Closed", "Open", "Semi"]
 
 detection_model = torch.hub.load("ultralytics/yolov5", "custom", path=DETECTION_MODEL, force_reload=True)
-classification_model = keras.models.load_model(CLASSIFICATION_MODEL)
 pytorch_model = DoorClassification()
-pytorch_model.load_state_dict(torch.load(DETECTION_MODEL))
+pytorch_model.load_state_dict(torch.load(CLASSIFICATION_MODEL))
 pytorch_model.eval()
 
 
@@ -33,7 +28,7 @@ def run_detection(img: Image):
     img: Image
         Image chargée par l'utilisateur.
     """
-    results = detection_model(img, size=224).pandas().xyxy[0]
+    results = detection_model(img, size=640).pandas().xyxy[0]
     results = results.to_numpy()[0]
     return img.crop((results[0], results[1], results[2], results[3]))
 
@@ -47,11 +42,15 @@ def run_classification(img: Image):
     img: Image
         Image cropée de la porte.
     """
-    img = img.resize((224, 224))
+    img = img.resize((150, 150))
     img = np.array(img)
-    img = np.expand_dims(img, axis=0)
-    pred = classification_model.predict(img)
-    return LABELMAP[pred[0].tolist().index(1)]
+    img = torch.from_numpy(img).float()
+    img = img.permute(2, 0, 1)
+    img = img.unsqueeze(0)
+    with torch.no_grad():
+        pred = pytorch_model(img)
+        print(pred)
+    return LABELMAP[pred.argmax()]
 
 
 st.set_page_config(
@@ -81,7 +80,7 @@ if st.button(
     try:    
         if uploaded_file is not None:
             img = Image.open(io.BytesIO(uploaded_file.read()))
-            st.image(img, use_column_width=True)
+            st.image(img)
             cropped_img = run_detection(img)
             label = run_classification(cropped_img)
             st.success("Porte détectée avec succès.")
