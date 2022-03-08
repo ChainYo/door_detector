@@ -8,13 +8,13 @@ from pathlib import Path
 from PIL import Image
 
 from torch import nn
-from torchvision import models
+from torchvision import models, transforms
 
 from model import DoorClassification
 
 
 DETECTION_MODEL = Path("models/model_detection.pt")
-CLASSIFICATION_MODEL = Path("models/finetuning.bin")
+CLASSIFICATION_MODEL = Path("models/finetuning.pt")
 LABELMAP = ["Closed", "Open", "Semi"]
 
 detection_model = torch.hub.load("yolov5", "custom", path=DETECTION_MODEL, force_reload=True, source="local")
@@ -53,10 +53,17 @@ def run_classification(img: Image):
     img: Image
         Image cropée de la porte.
     """
-    img = img.resize((224, 224))
-    img = np.array(img)
-    img = torch.from_numpy(img).float()
-    img = img.permute(2, 0, 1)
+    # img = img.resize((224, 224))
+    # img = np.array(img)
+    # img = torch.from_numpy(img).float()
+    # img = img.permute(2, 0, 1)
+    # img = img.unsqueeze(0)
+    img = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])(img)
     img = img.unsqueeze(0)
     with torch.no_grad():
         pred = pytorch_model(img)
@@ -96,7 +103,6 @@ if st.button(
             # cropped_img, draw_img = run_detection(img)
             st.image(img)
             label = run_classification(img)
-            st.success("Porte détectée avec succès.")
             st.markdown(f"**{label}**")
     except Exception as e:
         st.error(e)
